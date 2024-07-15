@@ -11,16 +11,19 @@ v1.0--20240715
 	•	输出每个频道当天发布的视频标题、链接、发布时间和简介。
 '''
 
+
 import requests
 from datetime import datetime, timedelta
 
 API_KEY = 'AIzaSyChajhjGl2wj3MMAqjx0HorsALZwqG6Ljg'
 CHANNEL_URLS = [
     'https://www.youtube.com/@AIsuperdomain',
-    'https://www.youtube.com/@fahdmirza',
-    'https://www.youtube.com/@TianLiangTimes',
+    'https://www.youtube.com/@01coder30',
+    'https://www.youtube.com/@MervinPraison',
+    
 
 ]
+DINGTALK_WEBHOOK = 'https://oapi.dingtalk.com/robot/send?access_token=986f9673d047547013597012d50823a3fb11be1b9d82f2fed7d728437f163623'
 
 def get_channel_id_from_url(api_key, url):
     # 提取用户名
@@ -53,7 +56,7 @@ def get_channel_videos(api_key, channel_id):
                     'title': video['snippet']['title'],
                     'link': f"https://www.youtube.com/watch?v={video['id']['videoId']}",
                     'publishedAt': video['snippet']['publishedAt'],
-                    'description': video['snippet']['description']
+                    #'description': video['snippet']['description']
                 }
                 channel_videos.append(video_data)
     
@@ -70,7 +73,36 @@ def get_all_channels_videos(api_key, channel_urls):
             print(f"频道ID未找到: {url}")
     return all_videos
 
+def send_dingtalk_message(webhook, message):
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "msgtype": "text",
+        "text": {
+            "content": '信息'+message
+        }
+    }
+    response = requests.post(webhook, headers=headers, json=data)
+    if response.status_code == 200:
+        print("消息发送成功")
+    else:
+        print(f"消息发送失败，状态码: {response.status_code}")
+
+def format_videos_message(videos):
+    message = ""
+    for video in videos:
+        message += f"Title: {video['title']}\nLink: {video['link']}\nPublished At: {video['publishedAt']}\nDescription: {video['description']}\n\n"
+    return message
+
 # 获取所有频道的视频信息
 all_videos = get_all_channels_videos(API_KEY, CHANNEL_URLS)
+if all_videos:
+    message = format_videos_message(all_videos)
+    send_dingtalk_message(DINGTALK_WEBHOOK, message)
+else:
+    print("今天没有新发布的视频")
+    send_dingtalk_message(DINGTALK_WEBHOOK, "今天没有新发布的视频")
+
 for video in all_videos:
     print(f"Title: {video['title']}\nLink: {video['link']}\nPublished At: {video['publishedAt']}\nDescription: {video['description']}\n")
